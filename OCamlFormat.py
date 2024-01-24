@@ -18,13 +18,16 @@ class OcamlFormatCommand(sublime_plugin.TextCommand):
             os.write(tmpfd, bytes(text, "UTF-8"))
             os.close(tmpfd)
 
-            ret = subprocess.call("ocamlformat --inplace %s" % (tmppath), shell=True)
+
+            ret = subprocess.call("ocamlformat --inplace --profile=default --enable-outside-detected-project %s" % (tmppath), shell=True)
             if ret != 0:
                 print("ocamlformat error: ", ret)
                 return
 
+
             with open(tmppath, "r", -1, "UTF-8") as f:
-                self.view.replace(edit, region, f.read())
+                r = f.read()
+                self.view.replace(edit, region, r)
         finally:
             try:
                 os.close(tmpfd)
@@ -35,10 +38,11 @@ class OcamlFormatCommand(sublime_plugin.TextCommand):
                 os.unlink(tmppath)
 
 
-class OCamlFormatListener(sublime_plugin.ViewEventListener):
-    def on_pre_save(self):
-        _, ext = os.path.splitext(self.view.file_name())
+class OCamlFormatListener(sublime_plugin.EventListener):
+    def on_pre_save(self, view):
+        _, ext = os.path.splitext(view.file_name())
         if ext != ".ml":
             return
 
-        self.view.run_command("ocaml_format")
+        view.run_command("ocaml_format")
+
